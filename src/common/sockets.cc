@@ -76,6 +76,15 @@ static inline int sockaddrfill(struct sockaddr_in *sa,const char *hostname,const
 
 static inline int sockresolve(const char *hostname,const char *service,uint32_t *ip,uint16_t *port,int family,int socktype,int passive) {
 	struct sockaddr_in sa;
+
+        printf("hostname = %s\n", hostname);
+        printf("service = %s\n", service);
+        printf("ip = %" PRIu32 "\n", ip);
+        printf("port = %" PRIu16 "\n", port);
+        printf("family = %d\n", family);
+        printf("socktype = %d\n", socktype);
+        printf("passive = %d\n",  passive);
+
 	if (sockaddrfill(&sa,hostname,service,family,socktype,passive)<0) {
 		return -1;
 	}
