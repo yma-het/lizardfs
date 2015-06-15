@@ -833,7 +833,7 @@ int masterconn_initconnect(masterconn *eptr) {
 			eptr->masteraddrvalid = 1;
 		} else {
 			lzfs_pretty_syslog(LOG_WARNING,
-					"can't resolve master host/port (%s:%s)",
+					"#FROM: src/master/masterconn.cc => can't resolve master host/port (%s:%s)",
 					MasterHost.c_str(), MasterPort.c_str());
 			return -1;
 		}

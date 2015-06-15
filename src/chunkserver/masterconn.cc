@@ -635,7 +635,7 @@ int masterconn_initconnect(masterconn *eptr) {
 				return -1;
 			}
 		} else {
-			lzfs_pretty_syslog(LOG_WARNING,"master connection module: can't resolve master host/port (%s:%s)",MasterHost,MasterPort);
+			lzfs_pretty_syslog(LOG_WARNING,"#FROM: src/chunkserver/masterconn.cc:187 => master connection module: can't resolve master host/port (%s:%s)",MasterHost,MasterPort);
 			return -1;
 		}
 	}
@@ -895,7 +895,7 @@ void masterconn_reload(void) {
 				lzfs_pretty_syslog(LOG_WARNING,"master connection module: localhost (%u.%u.%u.%u) can't be used for connecting with master (use ip address of network controller)",(mip>>24)&0xFF,(mip>>16)&0xFF,(mip>>8)&0xFF,mip&0xFF);
 			}
 		} else {
-			lzfs_pretty_syslog(LOG_WARNING,"master connection module: can't resolve master host/port (%s:%s)",MasterHost,MasterPort);
+			lzfs_pretty_syslog(LOG_WARNING,"#FROM: src/chunkserver/masterconn.cc:190 => master connection module: can't resolve master host/port (%s:%s)",MasterHost,MasterPort);
 		}
 	} else {
 		eptr->masteraddrvalid=0;
