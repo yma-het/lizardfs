@@ -18,6 +18,7 @@
 
 #include "common/platform.h"
 #include "common/sockets.h"
+#include "common/slogger.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -31,6 +32,7 @@
 #include <string.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
+#include <syslog.h>
 #include <sys/types.h>
 #include <unistd.h>
 
@@ -50,6 +52,7 @@ static inline int sockaddrfill(struct sockaddr_in *sa,const char *hostname,const
 	struct addrinfo hints, *res, *reshead;
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = family;
+        lzfs_pretty_syslog(LOG_WARNING,"stage1");
 	hints.ai_socktype = socktype;
 	if (passive) {
 		hints.ai_flags = AI_PASSIVE;
@@ -60,16 +63,21 @@ static inline int sockaddrfill(struct sockaddr_in *sa,const char *hostname,const
 	if (service && service[0]=='*') {
 		service=NULL;
 	}
+        lzfs_pretty_syslog(LOG_WARNING,"stage2");
 	if (getaddrinfo(hostname,service,&hints,&reshead)) {
+                lzfs_pretty_syslog(LOG_WARNING,"hostname = %s service = %s", hostname, service);
 		return -1;
+                lzfs_pretty_syslog(LOG_WARNING,"stage?");
 	}
 	for (res = reshead ; res ; res=res->ai_next) {
 		if (res->ai_family==family && res->ai_socktype==socktype && res->ai_addrlen==sizeof(struct sockaddr_in)) {
 			*sa = *((struct sockaddr_in*)(res->ai_addr));
 			freeaddrinfo(reshead);
+                        lzfs_pretty_syslog(LOG_WARNING,"succeded!");
 			return 0;
 		}
 	}
+        lzfs_pretty_syslog(LOG_WARNING,"exiting hungry(");
 	freeaddrinfo(reshead);
 	return -1;
 }
@@ -77,13 +85,23 @@ static inline int sockaddrfill(struct sockaddr_in *sa,const char *hostname,const
 static inline int sockresolve(const char *hostname,const char *service,uint32_t *ip,uint16_t *port,int family,int socktype,int passive) {
 	struct sockaddr_in sa;
 
-        printf("hostname = %s\n", hostname);
+        lzfs_pretty_syslog(LOG_WARNING,"hostname = %s", hostname);
+        lzfs_pretty_syslog(LOG_WARNING,"service = %s", service);
+        /*struct in_addr ip_addr;
+        ip_addr.s_addr = ntohl(sa.sin_addr.s_addr);
+        lzfs_pretty_syslog(LOG_WARNING,"ip = %s", inet_ntoa(ip_addr));
+        lzfs_pretty_syslog(LOG_WARNING,"port = %" PRIu16 "", ntohs(sa.sin_port)); //warning: format ‘%u’ expects argument of type ‘unsigned int’, but argument 3 has type ‘uint16_t* {aka short unsigned int*}’ [-Wformat=]
+        lzfs_pretty_syslog(LOG_WARNING,"family = %d", family);
+        lzfs_pretty_syslog(LOG_WARNING,"socktype = %d", socktype);
+        lzfs_pretty_syslog(LOG_WARNING,"passive = %d", passive);*/
+
+        /*printf("hostname = %s\n", hostname);
         printf("service = %s\n", service);
         printf("ip = %" PRIu32 "\n", ip);
         printf("port = %" PRIu16 "\n", port);
         printf("family = %d\n", family);
         printf("socktype = %d\n", socktype);
-        printf("passive = %d\n",  passive);
+        printf("passive = %d\n",  passive);*/
 
 	if (sockaddrfill(&sa,hostname,service,family,socktype,passive)<0) {
 		return -1;
@@ -94,6 +112,16 @@ static inline int sockresolve(const char *hostname,const char *service,uint32_t 
 	if (port!=(void *)0) {
 		*port = ntohs(sa.sin_port);
 	}
+        lzfs_pretty_syslog(LOG_WARNING,"hostname = %s", hostname);
+        lzfs_pretty_syslog(LOG_WARNING,"service = %s", service);
+        struct in_addr ip_addr;
+        ip_addr.s_addr = *ip;
+        lzfs_pretty_syslog(LOG_WARNING,"ip = %s", inet_ntoa(ip_addr));
+        lzfs_pretty_syslog(LOG_WARNING,"port = %" PRIu16 "", *port); //warning: format ‘%u’ expects argument of type ‘unsigned int’, but argument 3 has type ‘uint16_t* {aka short unsigned int*}’ [-Wf$
+        lzfs_pretty_syslog(LOG_WARNING,"family = %d", family);
+        lzfs_pretty_syslog(LOG_WARNING,"socktype = %d", socktype);
+        lzfs_pretty_syslog(LOG_WARNING,"passive = %d", passive);
+
 	return 0;
 }
 
@@ -290,6 +318,9 @@ int tcpgetstatus(int sock) {
 
 int tcpstrlisten(int sock,const char *hostname,const char *service,uint16_t queue) {
 	struct sockaddr_in sa;
+
+        //#anchor
+
 	if (sockaddrfill(&sa,hostname,service,AF_INET,SOCK_STREAM,1)<0) {
 		return -1;
 	}
