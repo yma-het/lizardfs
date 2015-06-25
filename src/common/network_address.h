@@ -9,10 +9,10 @@
 #include "common/serialization.h"
 
 struct NetworkAddress {
-	uint32_t ip;
+	struct in6_addr *ip;
 	uint16_t port;
 
-	NetworkAddress(uint32_t ip, uint16_t port) : ip(ip), port(port) {
+	NetworkAddress(struct in6_addr *ip, uint16_t port) : ip(ip), port(port) {
 	}
 
 	NetworkAddress() : ip(0), port(0) {
@@ -27,14 +27,16 @@ struct NetworkAddress {
 	}
 
 	std::string toString() const {
-		std::stringstream ss;
-		for (int i = 24; i >= 0; i -= 8) {
-			ss << ((ip >> i) & 0xff) << (i > 0 ? "." : "");
-		}
-		if (port > 0) {
-			ss << ":" << port;
-		}
-		return ss.str();
+		//std::stringstream ss;
+		//for (int i = 24; i >= 0; i -= 8) {
+		//	ss << ((ip >> i) & 0xff) << (i > 0 ? "." : "");
+		//}
+		//if (port > 0) {
+		//	ss << ":" << port;
+		//}
+                const std::string foo = "toString() has not been implemented yet!";
+		//return ss.str();
+                return foo;
 	}
 };
 
@@ -56,7 +58,15 @@ template <>
 struct hash<NetworkAddress> {
 	size_t operator()(const NetworkAddress& address) const {
 		// MooseFS CSDB hash function
-		return address.ip * 0x7b348943 + address.port;
+                //!!! Keep in mind!
+                unsigned char ipv6_end[4];
+                ipv6_end[0] = address.ip->s6_addr[12];
+                ipv6_end[1] = address.ip->s6_addr[13];
+                ipv6_end[2] = address.ip->s6_addr[14];
+                ipv6_end[3] = address.ip->s6_addr[15];
+                int hash_salt;
+                hash_salt = ipv6_end[0] | (ipv6_end[1] << 8) | (ipv6_end[2] << 16) | (ipv6_end[3] << 24);
+		return hash_salt * 0x7b348943 + address.port;
 	}
 };
 }

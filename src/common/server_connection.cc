@@ -80,7 +80,7 @@ MessageBuffer receiveRequestGeneric(
 
 ServerConnection::ServerConnection(const std::string& host, const std::string& port) : fd_(-1) {
 	NetworkAddress server;
-	tcpresolve(host.c_str(), port.c_str(), &server.ip, &server.port, false);
+	tcpresolve(host.c_str(), port.c_str(), server.ip, &server.port, false);
 	connect(server);
 }
 

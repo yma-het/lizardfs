@@ -26,25 +26,25 @@
 /* ----------------- TCP ----------------- */
 
 int tcpsocket(void);
-int tcpresolve(const char *hostname,const char *service,uint32_t *ip,uint16_t *port,int passiveflag);
+int tcpresolve(const char *hostname,const char *service,struct in6_addr *ip,uint16_t *port,int passiveflag);
 int tcpnonblock(int sock);
 int tcpsetacceptfilter(int sock);
 int tcpreuseaddr(int sock);
 int tcpnodelay(int sock);
 int tcpaccfhttp(int sock);
 int tcpaccfdata(int sock);
-int tcpnumbind(int sock,uint32_t ip,uint16_t port);
+int tcpnumbind(int sock,struct in6_addr *ip,uint16_t port);
 int tcpstrbind(int sock,const char *hostname,const char *service);
-int tcpnumconnect(int sock,uint32_t ip,uint16_t port);
-int tcpnumtoconnect(int sock,uint32_t ip,uint16_t port,uint32_t msecto);
+int tcpnumconnect(int sock,struct in6_addr *ip,uint16_t port);
+int tcpnumtoconnect(int sock,struct in6_addr *ip,uint16_t port,uint32_t msecto);
 int tcpstrconnect(int sock,const char *hostname,const char *service);
 int tcpstrtoconnect(int sock,const char *hostname,const char *service,uint32_t msecto);
 int tcpgetstatus(int sock);
-int tcpnumlisten(int sock,uint32_t ip,uint16_t port,uint16_t queue);
+int tcpnumlisten(int sock,struct in6_addr *ip,uint16_t port,uint16_t queue);
 int tcpstrlisten(int sock,const char *hostname,const char *service,uint16_t queue);
 int tcpaccept(int lsock);
-int tcpgetpeer(int sock,uint32_t *ip,uint16_t *port);
-int tcpgetmyaddr(int sock,uint32_t *ip,uint16_t *port);
+int tcpgetpeer(int sock,struct in6_addr *ip,uint16_t *port);
+int tcpgetmyaddr(int sock,struct in6_addr *ip,uint16_t *port);
 int tcpclose(int sock);
 int tcptopoll(int sock,int events,uint32_t msecto);
 int32_t tcptoread(int sock,void *buff,uint32_t leng,uint32_t msecto);
@@ -54,10 +54,10 @@ int tcptoaccept(int sock,uint32_t msecto);
 /* ----------------- UDP ----------------- */
 
 int udpsocket(void);
-int udpresolve(const char *hostname,const char *service,uint32_t *ip,uint16_t *port,int passiveflag);
+int udpresolve(const char *hostname,const char *service,struct in6_addr *ip,uint16_t *port,int passiveflag);
 int udpnonblock(int sock);
-int udpnumlisten(int sock,uint32_t ip,uint16_t port);
+int udpnumlisten(int sock,struct in6_addr *ip,uint16_t port);
 int udpstrlisten(int sock,const char *hostname,const char *service);
-int udpwrite(int sock,uint32_t ip,uint16_t port,const void *buff,uint16_t leng);
-int udpread(int sock,uint32_t *ip,uint16_t *port,void *buff,uint16_t leng);
+int udpwrite(int sock,struct in6_addr *ip,uint16_t port,const void *buff,uint16_t leng);
+int udpread(int sock,struct in6_addr *ip,uint16_t *port,void *buff,uint16_t leng);
 int udpclose(int sock);
