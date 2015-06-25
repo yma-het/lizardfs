@@ -19,6 +19,8 @@
 #include "common/platform.h"
 #include "common/sockets.h"
 #include "common/slogger.h"
+#include "common/exceptions.h"
+#include "common/cwrap.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -40,15 +42,16 @@
 
 /* ---------------SOCK ADDR--------------- */
 
-static inline int sockaddrnumfill(struct sockaddr_in *sa,uint32_t ip,uint16_t port) {
+static inline int sockaddrnumfill(struct sockaddr_in6 *sa, struct in6_addr ip,uint16_t port) {
 	memset(sa,0,sizeof(struct sockaddr_in));
-	sa->sin_family = AF_INET;
-	sa->sin_port = htons(port);
-	sa->sin_addr.s_addr = htonl(ip);
+	sa->sin6_family = AF_UNSPEC;
+	sa->sin6_port = htons(port);
+        memcpy(sa->sin6_addr.s6_addr, &ip, sizeof ip);
+	//sa->sin6_addr.s6_addr = htonl(ip);
 	return 0;
 }
 
-static inline int sockaddrfill(struct sockaddr_in *sa,const char *hostname,const char *service,int family,int socktype,int passive) {
+static inline int sockaddrfill(struct sockaddr_in6 *sa,const char *hostname,const char *service,int family,int socktype,int passive) {
 	struct addrinfo hints, *res, *reshead;
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = family;
@@ -70,8 +73,9 @@ static inline int sockaddrfill(struct sockaddr_in *sa,const char *hostname,const
                 lzfs_pretty_syslog(LOG_WARNING,"stage?");
 	}
 	for (res = reshead ; res ; res=res->ai_next) {
-		if (res->ai_family==family && res->ai_socktype==socktype && res->ai_addrlen==sizeof(struct sockaddr_in)) {
-			*sa = *((struct sockaddr_in*)(res->ai_addr));
+		if (res->ai_family==family && res->ai_socktype==socktype && res->ai_addrlen==sizeof(struct sockaddr_in6)) {
+			//*sa = *((struct sockaddr_in*)(res->ai_addr));
+                        memcpy(sa, res->ai_addr, res->ai_addrlen);
 			freeaddrinfo(reshead);
                         lzfs_pretty_syslog(LOG_WARNING,"succeded!");
 			return 0;
@@ -82,8 +86,8 @@ static inline int sockaddrfill(struct sockaddr_in *sa,const char *hostname,const
 	return -1;
 }
 
-static inline int sockresolve(const char *hostname,const char *service,uint32_t *ip,uint16_t *port,int family,int socktype,int passive) {
-	struct sockaddr_in sa;
+static inline int sockresolve(const char *hostname,const char *service,struct in6_addr *ip,uint16_t *port,int family,int socktype,int passive) {
+	struct sockaddr_in6 sa;
 
         lzfs_pretty_syslog(LOG_WARNING,"hostname = %s", hostname);
         lzfs_pretty_syslog(LOG_WARNING,"service = %s", service);
@@ -107,7 +111,9 @@ static inline int sockresolve(const char *hostname,const char *service,uint32_t 
 		return -1;
 	}
 	if (ip!=(void *)0) {
-		*ip = ntohl(sa.sin_addr.s_addr);
+		//*ip = ntohl(sa.sin_addr.s_addr);
+                memcpy(ip, &sa.sin6_addr.s6_addr, sizeof *ip);
+                //*ip = sa.sin6_addr.s6_addr
 	}
 	if (port!=(void *)0) {
 		*port = ntohs(sa.sin_port);
@@ -159,7 +165,12 @@ int tcpsetacceptfilter(int sock) {
 }
 
 int tcpsocket(void) {
-	return socket(AF_INET,SOCK_STREAM,0);
+        int sock = socket(AF_INET6,SOCK_STREAM,0);
+        int opt = 0;
+        if (setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, &opt, sizeof(opt)) < 0) {
+                throw InitializeException("tcplibrary: can't init socket :" + errorString(errno));
+        }
+	return sock;
 }
 
 int tcpnonblock(int sock) {
@@ -167,7 +178,7 @@ int tcpnonblock(int sock) {
 }
 
 int tcpresolve(const char *hostname,const char *service,uint32_t *ip,uint16_t *port,int passive) {
-	return sockresolve(hostname,service,ip,port,AF_INET,SOCK_STREAM,passive);
+	return sockresolve(hostname,service,ip,port,AF_UNSPEC,SOCK_STREAM,passive);
 }
 
 int tcpreuseaddr(int sock) {
@@ -210,7 +221,7 @@ int tcpaccfdata(int sock) {
 
 int tcpstrbind(int sock,const char *hostname,const char *service) {
 	struct sockaddr_in sa;
-	if (sockaddrfill(&sa,hostname,service,AF_INET,SOCK_STREAM,1)<0) {
+	if (sockaddrfill(&sa,hostname,service,AF_UNSPEC,SOCK_STREAM,1)<0) {
 		return -1;
 	}
 	if (bind(sock,(struct sockaddr *)&sa,sizeof(struct sockaddr_in)) < 0) {
@@ -230,7 +241,7 @@ int tcpnumbind(int sock,uint32_t ip,uint16_t port) {
 
 int tcpstrconnect(int sock,const char *hostname,const char *service) {
 	struct sockaddr_in sa;
-	if (sockaddrfill(&sa,hostname,service,AF_INET,SOCK_STREAM,0)<0) {
+	if (sockaddrfill(&sa,hostname,service,AF_UNSPEC,SOCK_STREAM,0)<0) {
 		return -1;
 	}
 	if (connect(sock,(struct sockaddr *)&sa,sizeof(struct sockaddr_in)) >= 0) {
@@ -259,7 +270,7 @@ int tcpstrtoconnect(int sock,const char *hostname,const char *service,uint32_t m
 	if (socknonblock(sock)<0) {
 		return -1;
 	}
-	if (sockaddrfill(&sa,hostname,service,AF_INET,SOCK_STREAM,0)<0) {
+	if (sockaddrfill(&sa,hostname,service,AF_UNSPEC,SOCK_STREAM,0)<0) {
 		return -1;
 	}
 	if (connect(sock,(struct sockaddr *)&sa,sizeof(struct sockaddr_in)) >= 0) {
@@ -321,7 +332,7 @@ int tcpstrlisten(int sock,const char *hostname,const char *service,uint16_t queu
 
         //#anchor
 
-	if (sockaddrfill(&sa,hostname,service,AF_INET,SOCK_STREAM,1)<0) {
+	if (sockaddrfill(&sa,hostname,service,AF_UNSPEC,SOCK_STREAM,1)<0) {
 		return -1;
 	}
 	if (bind(sock,(struct sockaddr *)&sa,sizeof(struct sockaddr_in)) < 0) {
@@ -337,9 +348,11 @@ int tcpnumlisten(int sock,uint32_t ip,uint16_t port,uint16_t queue) {
 	struct sockaddr_in sa;
 	sockaddrnumfill(&sa,ip,port);
 	if (bind(sock,(struct sockaddr *)&sa,sizeof(struct sockaddr_in)) < 0) {
+                lzfs_pretty_syslog(LOG_ERR,"tcpnumlisten has been failed at bind stage!");
 		return -1;
 	}
 	if (listen(sock,queue)<0) {
+                lzfs_pretty_syslog(LOG_ERR,"tcpnumlisten has been failed at listen stage!");
 		return -1;
 	}
 	return 0;
@@ -470,7 +483,7 @@ int tcptoaccept(int sock,uint32_t msecto) {
 /* ----------------- UDP ----------------- */
 
 int udpsocket(void) {
-	return socket(AF_INET,SOCK_DGRAM,0);
+	return socket(AF_UNSPEC,SOCK_DGRAM,0);
 }
 
 int udpnonblock(int sock) {
@@ -478,7 +491,7 @@ int udpnonblock(int sock) {
 }
 
 int udpresolve(const char *hostname,const char *service,uint32_t *ip,uint16_t *port,int passive) {
-	return sockresolve(hostname,service,ip,port,AF_INET,SOCK_DGRAM,passive);
+	return sockresolve(hostname,service,ip,port,AF_UNSPEC,SOCK_DGRAM,passive);
 }
 
 int udpnumlisten(int sock,uint32_t ip,uint16_t port) {
@@ -489,7 +502,7 @@ int udpnumlisten(int sock,uint32_t ip,uint16_t port) {
 
 int udpstrlisten(int sock,const char *hostname,const char *service) {
 	struct sockaddr_in sa;
-	if (sockaddrfill(&sa,hostname,service,AF_INET,SOCK_DGRAM,1)<0) {
+	if (sockaddrfill(&sa,hostname,service,AF_UNSPEC,SOCK_DGRAM,1)<0) {
 		return -1;
 	}
 	return bind(sock,(struct sockaddr *)&sa,sizeof(struct sockaddr_in));

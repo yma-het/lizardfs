@@ -1656,9 +1656,10 @@ int csserv_init(void) {
 	ListenPort = cfg_getstr("CSSERV_LISTEN_PORT","9422");
 	BgJobThreads = cfg_getuint32("CSSERV_CLIENT_WORKERS", 10);
 
-	lsock = tcpsocket();
-	if (lsock<0) {
-		throw InitializeException("main server module: can't create socket :" +
+	lsock = tcpsocket(); //#anchor
+	if (lsock<0) {       
+        //here we must determine, if we can work with ipv6 or v4 only, and then create appropriate socket
+		throw InitializeException("main server module: can't create socket :" + //#anchor
 				errorString(errno));
 	}
 	tcpnonblock(lsock);
