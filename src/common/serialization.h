@@ -10,6 +10,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <netinet/in.h>
 
 
 #include "common/datapack.h"
@@ -68,6 +69,10 @@ inline uint32_t serializedSize(int32_t) {
 
 inline uint32_t serializedSize(int64_t) {
 	return 8;
+}
+
+inline uint32_t serializedSize(in6_addr*) {
+        return sizeof(struct sockaddr_in6);
 }
 
 inline uint32_t serializedSize(const std::string& value) {
@@ -204,6 +209,10 @@ inline void serialize(uint8_t** destination, int32_t value) {
 
 inline void serialize(uint8_t** destination, int64_t value) {
 	put64bit(destination, value);
+}
+
+inline void serialize(uint8_t** destination, in6_addr* value) {
+        put32bit(destination, value);
 }
 
 // serialize a string
@@ -377,6 +386,20 @@ inline void deserialize(const uint8_t** source, uint32_t& bytesLeftInBuffer, int
 	bytesLeftInBuffer -= 8;
 	value = get64bit(source);
 }
+
+
+
+inline void deserialize(const uint8_t** source, uint32_t& bytesLeftInBuffer, in6_addr* value) {
+        verifySize(value, bytesLeftInBuffer);
+        bytesLeftInBuffer -= 4;
+        value = get32bit(source);
+}
+
+
+
+
+
+
 
 // deserialize a string
 inline void deserialize(const uint8_t** source, uint32_t& bytesLeftInBuffer, std::string& value) {
