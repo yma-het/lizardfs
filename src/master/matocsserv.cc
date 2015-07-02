@@ -34,6 +34,7 @@
 #include <list>
 #include <set>
 #include <vector>
+#include <netinet/in.h>
 
 #include "common/cfg.h"
 #include "common/cstoma_communication.h"
@@ -73,7 +74,7 @@ struct matocsserventry {
 	std::list<OutputPacket> outputPackets;
 	char *servstrip;                // human readable version of servip
 	uint32_t version;
-	uint32_t servip;                // ip to coonnect to
+	in6_addr* servip;                // ip to coonnect to
 	uint16_t servport;              // port to connect to
 	uint32_t timeout;               // communication timeout
 	MediaLabel label;               // server label, empty if not set
@@ -897,7 +898,7 @@ void matocsserv_got_chunkop_status(matocsserventry *eptr,const uint8_t *data,uin
 	}
 }
 
-void matocsserv_register_host(matocsserventry *eptr, uint32_t version, uint32_t servip,
+void matocsserv_register_host(matocsserventry *eptr, uint32_t version, in6_addr* servip,
 		uint16_t servport, uint32_t timeout) {
 	eptr->version  = version;
 	eptr->servip   = servip;
@@ -1137,7 +1138,7 @@ void matocsserv_space(matocsserventry *eptr,const uint8_t *data,uint32_t length)
 void matocsserv_liz_register_host(matocsserventry *eptr, const std::vector<uint8_t>& data)
 		throw (IncorrectDeserializationException) {
 	uint32_t version;
-	uint32_t servip;
+	in6_addr* servip;
 	uint16_t servport;
 	uint32_t timeout;
 	cstoma::registerHost::deserialize(data, servip, servport, timeout, version);

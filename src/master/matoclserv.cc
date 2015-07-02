@@ -878,7 +878,7 @@ void matoclserv_cserv_list(matoclserventry *eptr, const uint8_t */*data*/, uint3
 	uint8_t *ptr = matoclserv_createpacket(eptr, MATOCL_CSERV_LIST, 54 * listOfChunkservers.size());
 	for (const auto& server : listOfChunkservers) {
 		put32bit(&ptr, server.version);
-		put32bit(&ptr, server.servip);
+		put64bit(&ptr, server.servip);
 		put16bit(&ptr, server.servport);
 		put64bit(&ptr, server.usedspace);
 		put64bit(&ptr, server.totalspace);

@@ -75,7 +75,7 @@ typedef struct matomlserventry {
 
 	char *servstrip;                // human readable version of servip
 	uint32_t version;
-	uint32_t servip;
+	in6_addr* servip;
 	uint16_t servport;
 	bool shadow;
 

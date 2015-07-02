@@ -11,6 +11,7 @@
 #include <utility>
 #include <vector>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 
 #include "common/datapack.h"
@@ -211,10 +212,6 @@ inline void serialize(uint8_t** destination, int64_t value) {
 	put64bit(destination, value);
 }
 
-inline void serialize(uint8_t** destination, in6_addr* value) {
-        put32bit(destination, value);
-}
-
 // serialize a string
 inline void serialize(uint8_t** destination, const std::string& value) {
 	serialize(destination, uint32_t(value.length() + 1));
@@ -222,6 +219,17 @@ inline void serialize(uint8_t** destination, const std::string& value) {
 	*destination += value.length();
 	serialize(destination, char(0));
 }
+
+
+inline void serialize(uint8_t** destination, in6_addr* value) {
+        //serialize(destination, uint32_t(sizeof(struct sockaddr_in6)/sizeof(uint32_t)));
+        //memcpy(*destination, value, sizeof(struct sockaddr_in6));
+        char ip_text [INET6_ADDRSTRLEN];
+        inet_ntop(AF_INET6,  value, ip_text, INET6_ADDRSTRLEN);
+        std::string ip_string(ip_text);
+        serialize(destination, ip_string);
+}
+
 
 template <class T, int N>
 inline void serialize(uint8_t** destination, const T (&array)[N]);
@@ -387,20 +395,6 @@ inline void deserialize(const uint8_t** source, uint32_t& bytesLeftInBuffer, int
 	value = get64bit(source);
 }
 
-
-
-inline void deserialize(const uint8_t** source, uint32_t& bytesLeftInBuffer, in6_addr* value) {
-        verifySize(value, bytesLeftInBuffer);
-        bytesLeftInBuffer -= 4;
-        value = get32bit(source);
-}
-
-
-
-
-
-
-
 // deserialize a string
 inline void deserialize(const uint8_t** source, uint32_t& bytesLeftInBuffer, std::string& value) {
 	sassert(value.size() == 0);
@@ -421,6 +415,22 @@ inline void deserialize(const uint8_t** source, uint32_t& bytesLeftInBuffer, std
 	bytesLeftInBuffer -= size;
 	*source += size;
 }
+
+
+inline void deserialize(const uint8_t** source, uint32_t& bytesLeftInBuffer, in6_addr* value) {
+        //verifySize(value, bytesLeftInBuffer);
+        //bytesLeftInBuffer -= 4;
+        //value = get32bit(source);
+        struct sockaddr_in6 sa;
+        uint32_t size;
+        deserialize(source, bytesLeftInBuffer, size);
+        const char *ip_text = reinterpret_cast<const char*>(*source);
+        inet_pton(AF_INET6, ip_text, &(sa.sin6_addr));
+        value = &sa.sin6_addr;
+        bytesLeftInBuffer -= size;
+         *source += size;
+}
+
 
 template <class T, int N>
 inline void deserialize(const uint8_t** source, uint32_t& bytesLeftInBuffer, T (&array)[N]);

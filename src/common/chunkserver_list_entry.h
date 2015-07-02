@@ -1,5 +1,7 @@
 #pragma once
 
+#include <netinet/in.h>
+
 #include "common/platform.h"
 
 #include "common/serialization_macros.h"
@@ -7,7 +9,7 @@
 
 LIZARDFS_DEFINE_SERIALIZABLE_CLASS(ChunkserverListEntry,
 		uint32_t, version,
-		uint32_t, servip,
+		in6_addr*, servip,
 		uint16_t, servport,
 		uint64_t, usedspace,
 		uint64_t, totalspace,
